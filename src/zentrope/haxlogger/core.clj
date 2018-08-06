@@ -18,7 +18,7 @@
 
 (ns zentrope.haxlogger.core
   (:require
-   [clojure.pprint :refer [pprint]]
+   [clojure.data.json :as json]
    [clojure.string :as string])
   (:import
    (java.time Instant)
@@ -47,7 +47,7 @@
 (defn log [ns level m]
   (let [m2 (merge (metadata ns level) m)]
     (locking LOCK
-      (pprint m2)
+      (json/pprint m2)
       (flush))))
 
 (defmacro info

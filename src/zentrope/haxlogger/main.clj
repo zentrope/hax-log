@@ -20,13 +20,27 @@
   (:require
    [zentrope.haxlogger.core :as log]))
 
+(defn spawn
+  [name f]
+  (doto (Thread. f)
+    (.setName name)
+    (.setDaemon false)
+    (.start)))
+
+(defn sim-log
+  [lock]
+  (log/info {:message "This is from a thread!"
+             :tangle :weave
+             :foo {:bar "baz" :quo :quux}})
+  (deliver lock :done))
+
 ;; This exists mainly to exercise/demo the lib.
 
 (defn -main
   [& args]
   (log/info {:message "Not implemented."})
   (log/warn {:message "Lovely day" :count 23})
-  (Thread/sleep 2000)
-  (log/info {:message "done"})
-  ;;(System/exit 0)
-  )
+  (let [lock (promise)]
+    (spawn "sim-log" #(sim-log lock))
+    @lock
+    (log/info {:message "done"})))
