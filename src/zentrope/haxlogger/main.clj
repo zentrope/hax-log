@@ -16,12 +16,17 @@
 ;;; <http://www.gnu.org/licenses/>.
 ;;;
 
-{:deps
- {org.clojure/clojure {:mvn/version "1.10.0-alpha6"}}
+(ns zentrope.haxlogger.main
+  (:require
+   [zentrope.haxlogger.core :as log]))
 
- :paths
- ["src"]
+;; This exists mainly to exercise/demo the lib.
 
- :aliases
- {:run
-  {:main-opts [-m zentrope.haxlogger.main]}}}
+(defn -main
+  [& args]
+  (log/info {:message "Not implemented."})
+  (log/warn {:message "Lovely day" :count 23})
+  (Thread/sleep 2000)
+  (log/info {:message "done"})
+  ;;(System/exit 0)
+  )

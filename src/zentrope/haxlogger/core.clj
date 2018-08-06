@@ -17,9 +17,47 @@
 ;;;
 
 (ns zentrope.haxlogger.core
-  )
+  (:require
+   [clojure.pprint :refer [pprint]]
+   [clojure.string :as string])
+  (:import
+   (java.time Instant)
+   (java.time.format DateTimeFormatter)))
 
+(defn- timestamp []
+  (.format DateTimeFormatter/ISO_INSTANT (Instant/now)))
 
-(defn -main
-  [& args]
-  (println "Not implemented."))
+(defn- thread-name []
+  (.getName (Thread/currentThread)))
+
+(def ^:private levels
+  {:info "INFO"
+   :warn "WARN"
+   :error "ERROR"})
+
+(defn- metadata
+  [ns level]
+  {:timestamp (timestamp)
+   :level (levels level)
+   :namespace (str ns)
+   :thread (thread-name)})
+
+(defonce ^:private LOCK (Object.))
+
+(defn log [ns level m]
+  (let [m2 (merge (metadata ns level) m)]
+    (locking LOCK
+      (pprint m2)
+      (flush))))
+
+(defmacro info
+  [m]
+  `(log ~*ns* :info ~m))
+
+(defmacro error
+  [m]
+  `(log ~*ns* :error ~m))
+
+(defmacro warn
+  [m]
+  `(log ~*ns* :warn ~m))
