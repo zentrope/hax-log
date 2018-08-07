@@ -1,12 +1,20 @@
 # hax-logger
 
-A simple `clojure.tools.logger` alike for pure structured logging.
+A simple `stdout` hash-map-to-JSON logger for pure structured logging.
 
 
 ## Usage
 
-``` clojure
+Cut and paste the code in the `core.clj` namespace into your app, then
+tweak as desired.
 
+Required `clojure.data.json` as a dep:
+
+    {:deps {org.clojure/data.json {:mvn/version "0.2.6"}}}
+
+You can use it by passing in Clojure maps.
+
+``` clojure
 (ns my.app
   (:require
     [clojure.stacktrace :as st]
