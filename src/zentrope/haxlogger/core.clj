@@ -110,3 +110,11 @@
 (defmacro warn
   [m]
   `(log ~*ns* :warn ~m))
+
+(defn wait
+  []
+  (let [{:keys [queue]} QUEUE]
+    (loop []
+      (when-not (.isEmpty queue)
+        (Thread/sleep 100)
+        (recur)))))

@@ -44,6 +44,11 @@
   (let [lock (promise)]
     (spawn "sim-log" #(sim-log lock))
     @lock
+
     ;; You might not see this because the JVM will terminate
     ;; before the message can travel the queue.
-    (log/info {:message "done"})))
+    (log/info {:message "done"})
+
+    ;; UNLESS you do this, which will hang on until the
+    ;; backing queue is empty.
+    (log/wait)))
