@@ -27,26 +27,18 @@
 
 ;;; THREAD utilities
 
-(let [ids (atom {})]
-  (defn- thread-id
-    [name]
-    (swap! ids update-in [name] #(if (nil? %) 1 (inc %)))
-    (get @ids name)))
-
 (defn- thread-name []
   (.getName (Thread/currentThread)))
 
-(defn- spawn!
-  [name f]
+(defn- spawn! [f]
   (doto (Thread. f)
-    (.setName (str name "." (thread-id name)))
+    (.setName (str "hax.log.q." (rand-int 100)))
     (.setDaemon true)
     (.start)))
 
 ;;; QUEUE utilities
 
-(defn- handle
-  [queue f]
+(defn- handle [queue f]
   (try
     (loop []
       (let [value (.take queue)]
@@ -57,16 +49,14 @@
     (catch Throwable t
       (println "Queue [%s] terminated (%s)." (thread-name) (str t)))))
 
-(defn- put!
-  [{:keys [queue]} value]
+(defn- put! [{:keys [queue]} value]
   (doto queue
     ;; Use .offer if you want to drop messages if backed up.
     (.put value)))
 
-(defn- worker-queue
-  [name size f]
+(defn- worker-queue [size f]
   (let [queue (ArrayBlockingQueue. size)
-        thread (spawn! name #(handle queue f))]
+        thread (spawn! #(handle queue f))]
     {:queue queue :thread thread}))
 
 ;;; LOGGER utilities
@@ -79,25 +69,22 @@
    :warn "WARN"
    :error "ERROR"})
 
-(defn- metadata
-  [ns level]
+(defn- metadata [ns level]
   {:timestamp (timestamp)
    :level (levels level)
    :namespace (str ns)
    :thread (thread-name)})
 
-(defn- printer
-  [m]
+(defn- printer [m]
   (json/pprint m) (flush))
 
 (defonce ^:private QUEUE
-  (worker-queue "hax.log.q" 1024 #'printer))
+  (worker-queue 1024 #'printer))
 
 ;;; Interface
 
 (defn log [ns level m]
-  (let [m2 (merge (metadata ns level) m)]
-    (put! QUEUE m2)))
+  (put! QUEUE (merge (metadata ns level) m)))
 
 (defmacro info
   [m]

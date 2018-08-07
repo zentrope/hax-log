@@ -36,6 +36,12 @@ You can use it by passing in Clojure maps.
 
 ```
 
+## Limitations
+
+- Stdout only
+- Maps only
+- Pretty printed JSON only
+
 
 ## Output example
 
