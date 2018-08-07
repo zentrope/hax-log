@@ -32,6 +32,7 @@
   (log/info {:message "This is from a thread!"
              :tangle :weave
              :foo {:bar "baz" :quo :quux}})
+  (Thread/sleep 2000)
   (deliver lock :done))
 
 ;; This exists mainly to exercise/demo the lib.
@@ -43,4 +44,6 @@
   (let [lock (promise)]
     (spawn "sim-log" #(sim-log lock))
     @lock
+    ;; You might not see this because the JVM will terminate
+    ;; before the message can travel the queue.
     (log/info {:message "done"})))
