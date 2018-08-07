@@ -16,7 +16,7 @@
 ## <http://www.gnu.org/licenses/>.
 ##
 
-.PHONY: help db-init db-clean test
+.PHONY: help run outdated
 
 .DEFAULT_GOAL := help
 .SILENT:
@@ -25,6 +25,9 @@ clojure = $(shell which clojure)
 
 run: ## Run the service in the current terminal
 	@$(clojure) -A:run || true
+
+outdated: ## Check for outdated dependences
+	@$(clojure) -A:outdated
 
 help: ## Show makefile based help
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
