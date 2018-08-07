@@ -18,6 +18,7 @@
 
 (ns zentrope.haxlogger.main
   (:require
+   [clojure.stacktrace :as st]
    [zentrope.haxlogger.core :as log]))
 
 (defn spawn
@@ -32,7 +33,17 @@
   (log/info {:message "This is from a thread!"
              :tangle :weave
              :foo {:bar "baz" :quo :quux}})
+
+  (try
+    (throw (Exception. "oops!"))
+    (catch Throwable t
+      (log/error {:exception (str (class t))
+                  :stacktrace (with-out-str (st/print-stack-trace t))
+                  :message (.getMessage t)})))
+
+  (log/info {:message "Pausing for 2 seconds"})
   (Thread/sleep 2000)
+  (log/info {:message "Delivering release."})
   (deliver lock :done))
 
 ;; This exists mainly to exercise/demo the lib.
