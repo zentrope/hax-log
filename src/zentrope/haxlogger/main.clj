@@ -54,12 +54,14 @@
   (log/warn {:message "Lovely day" :count 23})
   (let [lock (promise)]
     (spawn "sim-log" #(sim-log lock))
+    (dotimes [x 20]
+      (log/info {:counter x}))
     @lock
 
     ;; You might not see this because the JVM will terminate
-    ;; before the message can travel the queue.
+    ;; before the backing thread-pool completes.
     (log/info {:message "done"})
 
-    ;; UNLESS you do this, which will hang on until the
-    ;; backing queue is empty.
+    ;; UNLESS you do this, which will hang on until all
+    ;; pending operations are complete.
     (log/wait)))

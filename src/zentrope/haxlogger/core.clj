@@ -21,43 +21,29 @@
    [clojure.data.json :as json]
    [clojure.string :as string])
   (:import
+   (java.util.concurrent.atomic AtomicLong)
+   (java.util.concurrent Executors ThreadFactory TimeUnit)
    (java.time Instant)
-   (java.time.format DateTimeFormatter)
-   (java.util.concurrent ArrayBlockingQueue)))
-
-;;; THREAD utilities
+   (java.time.format DateTimeFormatter)))
 
 (defn- thread-name []
   (.getName (Thread/currentThread)))
 
-(defn- spawn! [f]
-  (doto (Thread. f)
-    (.setName (str "hax.log.q." (rand-int 100)))
-    (.setDaemon true)
-    (.start)))
+(defn- thread-factory
+  [stub counter]
+  (proxy [ThreadFactory] []
+    (newThread [f]
+      (doto (Thread. f)
+        (.setDaemon true)
+        (.setName (str stub "." (.getAndIncrement counter)))))))
 
-;;; QUEUE utilities
+(def ^:private EXECUTOR
+  (Executors/newFixedThreadPool
+    (+ 2 (.availableProcessors (Runtime/getRuntime)))
+    (thread-factory "haxlog" (AtomicLong. 0))))
 
-(defn- handle [queue f]
-  (try
-    (loop []
-      (let [value (.take queue)]
-        (f value))
-      (recur))
-    (catch InterruptedException e
-      (println "Queue [%s] terminated." (thread-name)))
-    (catch Throwable t
-      (println "Queue [%s] terminated (%s)." (thread-name) (str t)))))
-
-(defn- put! [{:keys [queue]} value]
-  (doto queue
-    ;; Use .offer if you want to drop messages if backed up.
-    (.put value)))
-
-(defn- worker-queue [size f]
-  (let [queue (ArrayBlockingQueue. size)
-        thread (spawn! #(handle queue f))]
-    {:queue queue :thread thread}))
+(def ^:private AGENT
+  (agent nil :error-mode :continue))
 
 ;;; LOGGER utilities
 
@@ -65,26 +51,21 @@
   (.format DateTimeFormatter/ISO_INSTANT (Instant/now)))
 
 (def ^:private levels
-  {:info "INFO"
-   :warn "WARN"
+  {:info  "INFO"
+   :warn  "WARN"
    :error "ERROR"})
 
 (defn- metadata [ns level]
   {:timestamp (timestamp)
-   :level (levels level)
+   :level     (levels level)
    :namespace (str ns)
-   :thread (thread-name)})
-
-(defn- printer [m]
-  (json/pprint m) (flush))
-
-(defonce ^:private QUEUE
-  (worker-queue 1024 #'printer))
+   :thread    (thread-name)})
 
 ;;; Interface
 
 (defn log [ns level m]
-  (put! QUEUE (merge (metadata ns level) m)))
+  (let [data (merge (metadata ns level) m)]
+    (send-via EXECUTOR AGENT (fn [_] (json/pprint data)))))
 
 (defmacro info
   [m]
@@ -99,9 +80,7 @@
   `(log ~*ns* :warn ~m))
 
 (defn wait
-  []
-  (let [{:keys [queue]} QUEUE]
-    (loop []
-      (when-not (.isEmpty queue)
-        (Thread/sleep 100)
-        (recur)))))
+  ([timeout-ms]
+   (await-for timeout-ms AGENT))
+  ([]
+   (wait 4000)))

@@ -2,7 +2,6 @@
 
 A simple `stdout` hash-map-to-JSON logger for pure structured logging.
 
-
 ## Usage
 
 Cut and paste the code in the `core.clj` namespace into your app, then
@@ -33,6 +32,15 @@ You can use it by passing in Clojure maps.
     (log/error {:exception (str (class t))
                 :stacktrace (with-out-str (st/print-stack-trace t))
                 :message (.getMessage t)})))
+
+;; If you want to make sure all messages are printed when your
+;; app terminates, try:
+
+(log/wait)
+
+;; or
+
+(.addShutdownHook (Runtime/getRuntime) (Thread. #(log/wait 2000)))
 
 ```
 
